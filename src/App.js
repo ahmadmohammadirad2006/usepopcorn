@@ -56,21 +56,30 @@ export default function App() {
   const [movies, setMovies] = useState([]);
   const [watched, setWatched] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const query = "forrest gump";
-
-  console.log("RENDER")
-  console.log(isLoading)
-  console.log(movies)
+  const [error, setError] = useState("");
+  const query = "fsfdsdf";
 
   useEffect(function () {
     async function fetchMovies() {
-      setIsLoading(true);
-      const res = await fetch(
-        `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`
-      );
-      const data = await res.json();
-      setIsLoading(false);
-      setMovies(data.Search);
+      try {
+        setIsLoading(true);
+        const res = await fetch(
+          `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`
+        );
+
+        if (!res.ok)
+          throw new Error("Something went wrong with fetching movies");
+
+        const data = await res.json();
+
+        if (data.Response === "False") throw new Error("Movie not found");
+
+        setMovies(data.Search);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
     }
     fetchMovies();
   }, []);
@@ -83,7 +92,9 @@ export default function App() {
       </NavBar>
       <Main>
         <Box>
-          {isLoading ? <Loader /> : <MovieList movies={movies} />}  
+          {isLoading && <Loader />}
+          {error && <ErrorMessage message={error} />}
+          {!isLoading && !error && <MovieList movies={movies} />}
         </Box>
 
         <Box>
@@ -95,8 +106,17 @@ export default function App() {
   );
 }
 
-function Loader(){
-  return <p className="loader">Loading...</p>
+function Loader() {
+  return <p className="loader">Loading...</p>;
+}
+
+function ErrorMessage({ message }) {
+  return (
+    <p className="error">
+      <span>⛔</span>
+      {message}
+    </p>
+  );
 }
 
 function NavBar({ children }) {
